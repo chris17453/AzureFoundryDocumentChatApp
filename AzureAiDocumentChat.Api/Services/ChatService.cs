@@ -4,12 +4,13 @@ using AzureAiDocumentChat.Api.Data;
 using Microsoft.EntityFrameworkCore;
 using OpenAI.Chat;
 using System.Text.Json;
+using ChatMessage = AzureAiDocumentChat.Api.Models.ChatMessage;
 
 namespace AzureAiDocumentChat.Api.Services;
 
 public class ChatService
 {
-    private readonly OpenAIClient _openAIClient;
+    private readonly AzureOpenAIClient _openAIClient;
     private readonly ApplicationDbContext _context;
     private readonly DocumentProcessingService _documentService;
     private readonly PromptTemplateService _promptService;
@@ -28,7 +29,7 @@ public class ChatService
 
         var endpoint = configuration["AzureAI:OpenAI:Endpoint"]!;
         var apiKey = configuration["AzureAI:OpenAI:ApiKey"]!;
-        _openAIClient = new OpenAIClient(new Uri(endpoint), new Azure.AzureKeyCredential(apiKey));
+        _openAIClient = new AzureOpenAIClient(new Uri(endpoint), new Azure.AzureKeyCredential(apiKey));
     }
 
     public async Task<ChatSession> CreateChatSessionAsync(string title, Guid? documentId = null)
@@ -83,9 +84,9 @@ public class ChatService
         // Get response from Azure OpenAI
         var chatClient = _openAIClient.GetChatClient(_configuration["AzureAI:OpenAI:DeploymentName"]!);
         var chatMessages = messages.Select(m => 
-            m.Role == "user" ? ChatMessage.CreateUserMessage(m.Content) : 
-            m.Role == "assistant" ? ChatMessage.CreateAssistantMessage(m.Content) :
-            ChatMessage.CreateSystemMessage(m.Content)
+            m.Role == "user" ? OpenAI.Chat.ChatMessage.CreateUserMessage(m.Content) : 
+            m.Role == "assistant" ? OpenAI.Chat.ChatMessage.CreateAssistantMessage(m.Content) :
+            OpenAI.Chat.ChatMessage.CreateSystemMessage(m.Content)
         ).ToList();
 
         var response = await chatClient.CompleteChatAsync(chatMessages);

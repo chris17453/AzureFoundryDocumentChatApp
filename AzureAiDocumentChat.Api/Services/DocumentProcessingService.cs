@@ -16,7 +16,7 @@ public class DocumentProcessingService
 {
     private readonly DocumentAnalysisClient _documentClient;
     private readonly BlobServiceClient _blobClient;
-    private readonly OpenAIClient _openAIClient;
+    private readonly AzureOpenAIClient _openAIClient;
     private readonly SearchClient _searchClient;
     private readonly ApplicationDbContext _context;
     private readonly IConfiguration _configuration;
@@ -42,7 +42,7 @@ public class DocumentProcessingService
         // Initialize Azure OpenAI
         var openAIEndpoint = configuration["AzureAI:OpenAI:Endpoint"]!;
         var openAIApiKey = configuration["AzureAI:OpenAI:ApiKey"]!;
-        _openAIClient = new OpenAIClient(new Uri(openAIEndpoint), new AzureKeyCredential(openAIApiKey));
+        _openAIClient = new AzureOpenAIClient(new Uri(openAIEndpoint), new AzureKeyCredential(openAIApiKey));
 
         // Initialize Azure AI Search
         var searchEndpoint = configuration["AzureAI:Search:Endpoint"]!;
