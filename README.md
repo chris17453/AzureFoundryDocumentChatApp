@@ -113,24 +113,24 @@ Update `AzureAiDocumentChat.Api/appsettings.json` with your Azure service endpoi
 
 ```json
 {
-  \"AzureAI\": {
-    \"OpenAI\": {
-      \"Endpoint\": \"https://YOUR_OPENAI_RESOURCE.openai.azure.com/\",
-      \"ApiKey\": \"YOUR_OPENAI_API_KEY\",
-      \"DeploymentName\": \"gpt-4\"
+  "AzureAI": {
+    "OpenAI": {
+      "Endpoint": "https://YOUR_OPENAI_RESOURCE.openai.azure.com/",
+      "ApiKey": "YOUR_OPENAI_API_KEY",
+      "DeploymentName": "gpt-4"
     },
-    \"DocumentIntelligence\": {
-      \"Endpoint\": \"https://YOUR_DOCUMENT_INTELLIGENCE_RESOURCE.cognitiveservices.azure.com/\",
-      \"ApiKey\": \"YOUR_DOCUMENT_INTELLIGENCE_API_KEY\"
+    "DocumentIntelligence": {
+      "Endpoint": "https://YOUR_DOCUMENT_INTELLIGENCE_RESOURCE.cognitiveservices.azure.com/",
+      "ApiKey": "YOUR_DOCUMENT_INTELLIGENCE_API_KEY"
     },
-    \"Search\": {
-      \"Endpoint\": \"https://YOUR_SEARCH_SERVICE.search.windows.net\",
-      \"ApiKey\": \"YOUR_SEARCH_API_KEY\",
-      \"IndexName\": \"documents-index\"
+    "Search": {
+      "Endpoint": "https://YOUR_SEARCH_SERVICE.search.windows.net",
+      "ApiKey": "YOUR_SEARCH_API_KEY",
+      "IndexName": "documents-index"
     },
-    \"Storage\": {
-      \"ConnectionString\": \"DefaultEndpointsProtocol=https;AccountName=YOUR_STORAGE_ACCOUNT;AccountKey=YOUR_STORAGE_KEY;EndpointSuffix=core.windows.net\",
-      \"ContainerName\": \"documents\"
+    "Storage": {
+      "ConnectionString": "DefaultEndpointsProtocol=https;AccountName=YOUR_STORAGE_ACCOUNT;AccountKey=YOUR_STORAGE_KEY;EndpointSuffix=core.windows.net",
+      "ContainerName": "documents"
     }
   }
 }
@@ -142,15 +142,15 @@ Create an index in Azure AI Search with the following schema:
 
 ```json
 {
-  \"name\": \"documents-index\",
-  \"fields\": [
-    {\"name\": \"id\", \"type\": \"Edm.String\", \"key\": true, \"searchable\": false},
-    {\"name\": \"fileName\", \"type\": \"Edm.String\", \"searchable\": true, \"filterable\": true},
-    {\"name\": \"content\", \"type\": \"Edm.String\", \"searchable\": true},
-    {\"name\": \"uploadedAt\", \"type\": \"Edm.DateTimeOffset\", \"filterable\": true, \"sortable\": true},
-    {\"name\": \"wordCount\", \"type\": \"Edm.Int32\", \"filterable\": true},
-    {\"name\": \"pageCount\", \"type\": \"Edm.Int32\", \"filterable\": true},
-    {\"name\": \"contentVector\", \"type\": \"Collection(Edm.Single)\", \"searchable\": true, \"dimensions\": 1536, \"vectorSearchProfile\": \"default\"}
+  "name": "documents-index",
+  "fields": [
+    {"name": "id", "type": "Edm.String", "key": true, "searchable": false},
+    {"name": "fileName", "type": "Edm.String", "searchable": true, "filterable": true},
+    {"name": "content", "type": "Edm.String", "searchable": true},
+    {"name": "uploadedAt", "type": "Edm.DateTimeOffset", "filterable": true, "sortable": true},
+    {"name": "wordCount", "type": "Edm.Int32", "filterable": true},
+    {"name": "pageCount", "type": "Edm.Int32", "filterable": true},
+    {"name": "contentVector", "type": "Collection(Edm.Single)", "searchable": true, "dimensions": 1536, "vectorSearchProfile": "default"}
   ]
 }
 ```
