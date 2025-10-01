@@ -1,0 +1,6 @@
+@AzureAiDocumentChat.Api_HostAddress = http://localhost:5095
+
+GET {{AzureAiDocumentChat.Api_HostAddress}}/weatherforecast/
+Accept: application/json
+
+###

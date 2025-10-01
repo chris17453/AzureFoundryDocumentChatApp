@@ -1,0 +1,26 @@
+{
+  "permissions": {
+    "allow": [
+      "WebSearch",
+      "Bash(export PATH=\"$PATH:/home/nd/.dotnet\")",
+      "Bash(/home/nd/.dotnet/dotnet new console -n AzureAiDocumentAssistant)",
+      "Bash(/home/nd/.dotnet/dotnet add package Azure.AI.OpenAI)",
+      "Bash(/home/nd/.dotnet/dotnet add package Azure.AI.FormRecognizer)",
+      "Bash(/home/nd/.dotnet/dotnet add package Azure.Search.Documents)",
+      "Bash(/home/nd/.dotnet/dotnet add package Azure.Storage.Blobs)",
+      "Bash(/home/nd/.dotnet/dotnet add package Microsoft.Extensions.Configuration)",
+      "Bash(/home/nd/.dotnet/dotnet add package Microsoft.Extensions.Configuration.Json)",
+      "Bash(/home/nd/.dotnet/dotnet new webapi -n AzureAiDocumentChat.Api)",
+      "Bash(/home/nd/.dotnet/dotnet add package Microsoft.EntityFrameworkCore.SqlServer)",
+      "Bash(/home/nd/.dotnet/dotnet add package Microsoft.EntityFrameworkCore.Design)",
+      "Bash(npx create-react-app:*)",
+      "Bash(npm install:*)",
+      "Bash(git init:*)",
+      "Bash(git rm:*)",
+      "Bash(git add:*)",
+      "Bash(git commit:*)"
+    ],
+    "deny": [],
+    "ask": []
+  }
+}
