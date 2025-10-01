@@ -2,30 +2,106 @@
 
 ## System Overview
 
-The Azure AI Document Chat Platform is a full-stack application demonstrating enterprise-grade document processing and conversational AI capabilities using Microsoft Azure AI services. The system employs a modern microservices-oriented architecture with clear separation of concerns between presentation, business logic, and data layers.
+This is the main architecture doc for our Azure AI chat platform. Been working on this for a while - it's gotten pretty complex but the RAG implementation is solid now. The whole thing basically takes documents, processes them with Azure's AI stuff, and lets users chat with the content.
 
-## Architecture Diagram
+<!-- TODO: Add performance metrics section when we get some real usage data -->
+<!-- FIXME: The token counting is still rough - need to implement proper tiktoken -->
 
+## High-Level Architecture
+
+```mermaid
+graph TB
+    subgraph "Frontend Layer"
+        UI[React TypeScript SPA<br/>Material-UI Components]
+    end
+    
+    subgraph "API Layer"
+        API[ASP.NET Core Web API<br/>.NET 8]
+        Auth[Authentication<br/>Ready for Azure AD]
+    end
+    
+    subgraph "Business Layer"
+        DocService[Document Processing Service]
+        ChatService[Chat Service + RAG]
+        PromptService[Prompt Template Service]
+    end
+    
+    subgraph "Data Layer"
+        DB[(SQL Server<br/>Entity Framework)]
+        
+    end
+    
+    subgraph "Azure AI Services"
+        OpenAI[Azure OpenAI<br/>GPT-4 + Embeddings]
+        DocIntel[Document Intelligence<br/>OCR + Analysis]
+        Search[AI Search<br/>Hybrid Vector Search]
+        Storage[Blob Storage<br/>Document Files]
+    end
+    
+    UI -.->|HTTPS/REST| API
+    API --> DocService
+    API --> ChatService
+    API --> PromptService
+    
+    DocService --> DocIntel
+    DocService --> Storage
+    DocService --> Search
+    DocService --> DB
+    
+    ChatService --> OpenAI
+    ChatService --> Search
+    ChatService --> DB
+    
+    PromptService --> OpenAI
+    
+    classDef azure fill:#0078d4,stroke:#fff,stroke-width:2px,color:#fff
+    classDef frontend fill:#61dafb,stroke:#fff,stroke-width:2px,color:#000
+    classDef backend fill:#512bd4,stroke:#fff,stroke-width:2px,color:#fff
+    classDef data fill:#ff6b35,stroke:#fff,stroke-width:2px,color:#fff
+    
+    class OpenAI,DocIntel,Search,Storage azure
+    class UI frontend
+    class API,DocService,ChatService,PromptService backend
+    class DB data
 ```
-┌─────────────────┐    ┌─────────────────┐    ┌─────────────────┐
-│   React SPA     │    │  ASP.NET Core   │    │   Azure AI      │
-│   TypeScript    │◄──►│   Web API       │◄──►│   Services      │
-│   Material-UI   │    │   .NET 8        │    │                 │
-└─────────────────┘    └─────────────────┘    └─────────────────┘
-         │                       │                       │
-         │                       │                       ▼
-         │                       │            ┌─────────────────┐
-         │                       │            │ Document Intel. │
-         │                       │            │ OpenAI Service  │
-         │                       │            │ AI Search       │
-         │                       │            │ Blob Storage    │
-         │                       │            └─────────────────┘
-         │                       │
-         │                       ▼
-         │            ┌─────────────────┐
-         │            │ SQL Server DB   │
-         │            │ Entity Framework│
-         │            └─────────────────┘
+
+## Document Processing Flow
+
+This is probably the most complex part - took forever to get the embedding pipeline right.
+
+```mermaid
+sequenceDiagram
+    participant User
+    participant Frontend
+    participant API
+    participant DocService
+    participant DocIntel as Azure Document Intelligence
+    participant Storage as Blob Storage
+    participant OpenAI as Azure OpenAI
+    participant Search as AI Search
+    participant DB as SQL Server
+    
+    User->>Frontend: Upload document
+    Frontend->>API: POST /api/documents/upload
+    Note over API: Validate file type & size
+    
+    API->>DocService: ProcessDocumentAsync()
+    DocService->>Storage: Upload to blob container
+    Storage-->>DocService: Blob URL
+    
+    DocService->>DocIntel: Analyze document (OCR)
+    DocIntel-->>DocService: Extracted text + metadata
+    
+    DocService->>OpenAI: Generate embeddings
+    Note over OpenAI: text-embedding-3-small
+    OpenAI-->>DocService: Vector embeddings (1536 dims)
+    
+    DocService->>Search: Index document + vectors
+    DocService->>DB: Save metadata + content
+    
+    DocService-->>API: Document entity
+    API-->>Frontend: Document metadata
+    Frontend-->>User: Upload success
 ```
 
 ## Technology Stack
@@ -76,30 +152,46 @@ The Azure AI Document Chat Platform is a full-stack application demonstrating en
 
 ### Data Models and Relationships
 
-```csharp
-Document (1) ──→ (N) ChatSession (1) ──→ (N) ChatMessage
+The DB schema is pretty straightforward - just documents, chat sessions, and messages. Had to make some decisions about storing embeddings (went with JSON for now, might move to proper vector DB later).
 
-Document:
-├── Id (PK, Guid)
-├── FileName, ContentType, FileSizeBytes
-├── Content (NVARCHAR(MAX))
-├── VectorEmbedding (JSON serialized float[])
-├── Metadata (PageCount, WordCount, UploadedAt)
-└── BlobUrl (Azure Storage reference)
-
-ChatSession:
-├── Id (PK, Guid)
-├── Title, CreatedAt, LastUpdatedAt
-├── DocumentId (FK, nullable)
-└── Navigation: Document, Messages
-
-ChatMessage:
-├── Id (PK, Guid)
-├── Role (user|assistant), Content
-├── Timestamp, SourceDocuments (JSON)
-├── ChatSessionId (FK)
-└── Navigation: ChatSession
+```mermaid
+erDiagram
+    Document ||--o{ ChatSession : "can have multiple sessions"
+    ChatSession ||--o{ ChatMessage : "contains messages"
+    
+    Document {
+        guid Id PK
+        string FileName
+        string ContentType
+        bigint FileSizeBytes
+        text Content
+        text VectorEmbedding "JSON array of floats"
+        int PageCount
+        int WordCount
+        datetime UploadedAt
+        string BlobUrl "Azure Storage URL"
+    }
+    
+    ChatSession {
+        guid Id PK
+        string Title
+        datetime CreatedAt
+        datetime LastUpdatedAt
+        guid DocumentId FK "nullable"
+    }
+    
+    ChatMessage {
+        guid Id PK
+        string Role "user or assistant"
+        text Content
+        datetime Timestamp
+        text SourceDocuments "JSON array of source refs"
+        guid ChatSessionId FK
+    }
 ```
+
+<!-- NOTE: Considered using Azure SQL's native vector support but it's still preview -->
+<!-- The JSON approach works fine for now, easy to query and update -->
 
 ## Processing Workflows
 
@@ -114,15 +206,33 @@ ChatMessage:
 
 ### RAG (Retrieval-Augmented Generation) Workflow
 
-1. **Query Processing**: User submits natural language question
-2. **Context Retrieval**: 
-   - Generate query embeddings
-   - Perform hybrid search (text + vector similarity)
-   - Retrieve top-K relevant document sections
-3. **Prompt Construction**: Use PromptTemplateService to build context-aware prompts
-4. **LLM Inference**: Submit to Azure OpenAI GPT-4 with conversation history
-5. **Response Processing**: Parse response and track source attribution
-6. **Persistence**: Store conversation in database with metadata
+The RAG flow is where the magic happens. Spent a lot of time tuning the retrieval part - the hybrid search really makes a difference vs just vector similarity.
+
+```mermaid
+flowchart TD
+    A[User asks question] --> B[Generate query embeddings]
+    B --> C[Hybrid search: text + vector]
+    C --> D{Found relevant docs?}
+    D -->|Yes| E[Build context prompt]
+    D -->|No| F[Use general knowledge prompt]
+    E --> G[Add conversation history]
+    F --> G
+    G --> H[Send to GPT-4]
+    H --> I[Parse response]
+    I --> J[Extract source references]
+    J --> K[Save to database]
+    K --> L[Return to user]
+    
+    style D fill:#ffd700
+    style H fill:#90EE90
+    style K fill:#FFB6C1
+```
+
+Key optimizations we've done:
+- Chunk documents smartly (overlap + semantic boundaries)
+- Use reranking after initial retrieval  
+- Track which chunks actually influenced the response
+- Fallback to broader search if no good matches
 
 ### Unified Prompt Management System
 

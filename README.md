@@ -1,30 +1,67 @@
 # Azure AI Document Chat Platform
 
-Enterprise-grade document processing and conversational AI platform built with Azure AI services, demonstrating production-ready RAG (Retrieval-Augmented Generation) implementation with modern full-stack architecture.
+So this started as a quick demo of Azure AI services but ended up being a pretty full-featured document chat system. The RAG implementation is solid now and handles decent-sized document collections. Built it to show off what you can do with the new Azure AI Foundry stuff.
 
-## Executive Summary
+## What it does
 
-This platform provides intelligent document analysis and natural language querying capabilities through Azure AI services integration. The system processes uploaded documents using OCR and machine learning, creates searchable vector embeddings, and enables conversational interaction with document content through an advanced RAG implementation.
+Basically you upload PDFs, Word docs, whatever - it OCRs them, creates vector embeddings, then you can chat with the content. Uses GPT-4 for the chat and does semantic search to find relevant chunks. Works pretty well, the hybrid search approach (text + vector) gives much better results than just cosine similarity.
 
-## Core Capabilities
+```mermaid
+graph LR
+    A[Upload Doc] --> B[OCR + Extract]
+    B --> C[Create Embeddings] 
+    C --> D[Index in Search]
+    D --> E[Chat Interface]
+    E --> F[Vector Search]
+    F --> G[GPT-4 Response]
+    
+    style A fill:#e1f5fe
+    style E fill:#f3e5f5
+    style G fill:#e8f5e8
+```
 
-**Document Intelligence Pipeline**
-- Multi-format document processing (PDF, Word, images, text)
-- OCR text extraction with Azure AI Document Intelligence
-- Automated metadata extraction and content indexing
-- Vector embedding generation for semantic search
+## Core Features
 
-**Conversational AI Interface**
-- Natural language document querying via GPT-4
-- Context-aware responses with source attribution
-- Conversation history and session management
-- Unified prompt management system with runtime configurability
+### Document Processing
+- Handles PDFs, Word docs, images, plain text 
+- Azure Document Intelligence for OCR (works really well on scanned docs)
+- Automatic chunking with overlap for better retrieval
+- Vector embeddings via text-embedding-3-small (1536 dimensions)
 
-**Enterprise Architecture**
-- React TypeScript frontend with Material-UI components
-- ASP.NET Core 8 Web API with clean architecture patterns
-- Entity Framework Core with SQL Server persistence
-- Comprehensive error handling and logging infrastructure
+### Chat & RAG
+- GPT-4 powered conversations with your documents
+- Hybrid search: combines text matching + semantic similarity  
+- Source attribution - shows which docs/sections were used
+- Conversation history per session
+- Configurable prompts (no more hardcoded system messages!)
+
+### Technical Stack
+```mermaid
+graph TB
+    subgraph Frontend
+        React[React + TypeScript<br/>Material-UI]
+    end
+    subgraph Backend  
+        API[ASP.NET Core 8<br/>Clean Architecture]
+        EF[Entity Framework<br/>SQL Server]
+    end
+    subgraph Azure
+        OpenAI[Azure OpenAI<br/>GPT-4 + Embeddings]
+        DocAI[Document Intelligence<br/>OCR Service]
+        Search[AI Search<br/>Vector + Text Search]
+        Storage[Blob Storage<br/>File Storage]
+    end
+    
+    React --> API
+    API --> EF
+    API --> OpenAI
+    API --> DocAI  
+    API --> Search
+    API --> Storage
+```
+
+<!-- TODO: Add auth integration (probably Azure AD B2C) -->
+<!-- FIXME: Token counting is approximate, should use tiktoken for accuracy -->
 
 ## Technical Stack
 
@@ -51,18 +88,24 @@ This platform provides intelligent document analysis and natural language queryi
 └── Documentation/                 # Additional technical documentation
 ```
 
-## Setup Instructions
+## Getting it Running
 
-### Prerequisites
+### What you need
 
-- .NET 8 SDK
-- Node.js 18+
-- MSSQL Server (LocalDB works fine)
-- Azure subscription with:
-  - Azure OpenAI Service
-  - Azure AI Document Intelligence
-  - Azure AI Search service
-  - Azure Storage Account
+- .NET 8 SDK (latest)
+- Node.js 18+ (for the React frontend)  
+- SQL Server (LocalDB is fine for dev)
+- Azure subscription with these services:
+  - Azure OpenAI Service (need GPT-4 and text-embedding-3-small models)
+  - Azure AI Document Intelligence 
+  - Azure AI Search service (with semantic search enabled)
+  - Azure Storage Account (for document files)
+
+### Azure Setup Notes
+
+The Azure AI Search index needs specific schema - check the ARCHITECTURE.md for details. The vector field needs to be 1536 dimensions to match the embedding model.
+
+Also make sure you have quota for the OpenAI models - GPT-4 can be limited depending on your subscription tier.
 
 ### 1. Configure Azure Services
 
@@ -120,7 +163,7 @@ dotnet restore
 dotnet run
 ```
 
-API will be available at `https://localhost:7067`
+Should start up on `https://localhost:7067` - check the Swagger UI to make sure the endpoints are working.
 
 ### 4. Run the Frontend
 
@@ -130,7 +173,17 @@ npm install
 npm start
 ```
 
-Frontend will be available at `http://localhost:3000`
+React dev server starts on `http://localhost:3000`. CORS is already configured for this port.
+
+### Troubleshooting
+
+**Common issues:**
+- If embeddings fail, check your Azure OpenAI model deployment names
+- Document upload errors usually mean blob storage config is wrong  
+- Search not working = check the AI Search index schema
+- Database errors = make sure connection string is right for your SQL setup
+
+The logs are pretty verbose so check the console output when things break.
 
 ## Key Features Demonstrated
 
@@ -168,18 +221,18 @@ Frontend will be available at `http://localhost:3000`
 - **Error Handling**: Comprehensive error handling with user-friendly messages
 - **CORS**: Configured for local development
 
-## Unified Prompt System Usage
+## Prompt Management System
 
-The new `PromptTemplateService` centralizes all AI prompts and provides several key benefits:
+One thing I'm pretty happy with is the unified prompt system. Got tired of having prompts scattered all over the codebase, so I built a centralized service for managing them.
 
-### Available Prompt Templates
-- `document_chat_system` - Main system prompt for document Q&A
-- `general_chat_system` - General purpose chat without specific documents
-- `document_summary` - Document summarization prompts
-- `document_comparison` - Multi-document comparison analysis
-- `key_phrase_extraction` - Extract key terms and concepts
-- `search_enhancement` - Improve user search queries
-- `context_validation` - Validate context relevance
+### Available Templates
+- `document_chat_system` - Main RAG system prompt  
+- `document_summary` - Summarization prompts
+- `document_comparison` - Multi-doc analysis 
+- `search_enhancement` - Query optimization
+- `context_validation` - Relevance scoring
+
+The cool thing is you can update prompts at runtime via the API, which is great for A/B testing different prompt strategies.
 
 ### Usage Examples
 
@@ -235,27 +288,31 @@ Add prompt settings to `appsettings.json`:
 - **Prompt performance analytics**
 - **Multi-language prompt templates**
 
-## Production Deployment Considerations
+## Production Deployment
 
-**Infrastructure Requirements**
-- Azure Resource Group with appropriate RBAC policies
-- Azure OpenAI Service with GPT-4 and text-embedding-3-small deployments
-- Azure AI Search service with semantic search capabilities enabled
-- Azure Storage Account with blob container configuration
-- Azure SQL Database with appropriate performance tier
-- Application insights for monitoring and telemetry
+Haven't deployed this to prod yet but here's what you'd need:
 
-**Security Implementation**
-- Azure Key Vault integration for secrets management
-- Managed Identity for service-to-service authentication
-- Network security groups and private endpoints for Azure services
-- HTTPS enforcement with proper certificate management
+### Azure Resources
+- Resource Group (obviously)
+- App Service for the API (probably Standard tier minimum)
+- Azure SQL Database (Basic tier might work for small loads)
+- All the AI services mentioned above
+- Application Insights for monitoring
+- Key Vault for storing secrets properly
 
-**Scalability and Performance**
-- Horizontal scaling configuration for App Service
-- Connection pooling and retry policies for database operations
-- Caching strategy implementation for frequently accessed data
-- Rate limiting and throttling for Azure AI service consumption
+### Performance Notes
+The main bottleneck is going to be the OpenAI API calls. The embedding generation can be slow for large documents. Consider:
+- Async processing for document uploads
+- Caching embeddings if you reprocess the same content
+- Rate limiting to stay within Azure quotas
+
+### Security TODO
+- Move all the API keys to Key Vault 
+- Set up managed identity for service auth
+- Add proper authentication (Azure AD B2C probably)
+- Network security groups for the Azure resources
+
+The current setup is fine for demo/dev but you'd want to lock it down for production.
 
 ## Documentation
 
