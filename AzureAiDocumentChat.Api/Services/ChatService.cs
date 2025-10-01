@@ -83,11 +83,17 @@ public class ChatService
 
         // Get response from Azure OpenAI
         var chatClient = _openAIClient.GetChatClient(_configuration["AzureAI:OpenAI:DeploymentName"]!);
-        var chatMessages = messages.Select(m => 
-            m.Role == "user" ? OpenAI.Chat.ChatMessage.CreateUserMessage(m.Content) : 
-            m.Role == "assistant" ? OpenAI.Chat.ChatMessage.CreateAssistantMessage(m.Content) :
-            OpenAI.Chat.ChatMessage.CreateSystemMessage(m.Content)
-        ).ToList();
+        var chatMessages = new List<OpenAI.Chat.ChatMessage>();
+        
+        foreach (var m in messages)
+        {
+            if (m.Role == "user")
+                chatMessages.Add(OpenAI.Chat.ChatMessage.CreateUserMessage(m.Content));
+            else if (m.Role == "assistant") 
+                chatMessages.Add(OpenAI.Chat.ChatMessage.CreateAssistantMessage(m.Content));
+            else
+                chatMessages.Add(OpenAI.Chat.ChatMessage.CreateSystemMessage(m.Content));
+        }
 
         var response = await chatClient.CompleteChatAsync(chatMessages);
         var assistantResponse = response.Value.Content[0].Text;

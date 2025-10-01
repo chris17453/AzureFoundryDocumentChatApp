@@ -175,14 +175,12 @@ function App() {
 
         <TabPanel value={tabValue} index={2}>
           {currentSession ? (
-            <Grid container spacing={2} sx={{ height: 'calc(100vh - 200px)' }}>
-              <Grid item xs={12}>
-                <ChatInterface
-                  session={currentSession}
-                  onSessionUpdate={handleSessionUpdate}
-                />
-              </Grid>
-            </Grid>
+            <Box sx={{ height: 'calc(100vh - 200px)' }}>
+              <ChatInterface
+                session={currentSession}
+                onSessionUpdate={handleSessionUpdate}
+              />
+            </Box>
           ) : (
             <Alert severity="info">
               Select a document to start chatting with it.

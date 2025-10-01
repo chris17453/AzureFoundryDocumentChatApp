@@ -44,7 +44,7 @@ export const DocumentList: React.FC<DocumentListProps> = ({
   return (
     <Grid container spacing={2}>
       {documents.map((document) => (
-        <Grid item xs={12} sm={6} md={4} key={document.id}>
+        <Grid size={{ xs: 12, sm: 6, md: 4 }} key={document.id}>
           <Card sx={{ height: '100%', display: 'flex', flexDirection: 'column' }}>
             <CardContent sx={{ flexGrow: 1 }}>
               <Stack spacing={2}>
