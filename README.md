@@ -2,6 +2,8 @@
 
 So this started as a quick demo of Azure AI services but ended up being a pretty full-featured document chat system. The RAG implementation is solid now and handles decent-sized document collections. Built it to show off what you can do with the new Azure AI Foundry stuff.
 
+![Azure Foundry Chat Application](./assets/azure-foundry-chat.png)
+
 ## What it does
 
 Basically you upload PDFs, Word docs, whatever - it OCRs them, creates vector embeddings, then you can chat with the content. Uses GPT-4 for the chat and does semantic search to find relevant chunks. Works pretty well, the hybrid search approach (text + vector) gives much better results than just cosine similarity.
